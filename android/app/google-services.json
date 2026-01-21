@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "448168991519",
+    "project_id": "ur-health-cd3fb",
+    "storage_bucket": "ur-health-cd3fb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:448168991519:android:30ee71a05d8f909cb76e2a",
+        "android_client_info": {
+          "package_name": "com.example.ur_health"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "448168991519-1hrp7o4or0d4m3rc92ktbd84r12c5740.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbO60z-Yc40sN5T8Hx-wLYMao756OpZlg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "448168991519-1hrp7o4or0d4m3rc92ktbd84r12c5740.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "448168991519-c5she87dcss9kc1ffttdaghcibeav9bs.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.urHealth"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
