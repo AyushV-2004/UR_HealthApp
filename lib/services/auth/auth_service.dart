@@ -18,7 +18,13 @@ class AuthService {
       email: email,
       password: password,
     );
-    return result.user;
+
+    final user = result.user;
+    if (user != null) {
+      await createUserIfNotExists(user);
+    }
+
+    return user;
   }
 
   /// =======================
@@ -32,8 +38,15 @@ class AuthService {
       email: email,
       password: password,
     );
-    return result.user;
+
+    final user = result.user;
+    if (user != null) {
+      await createUserIfNotExists(user);
+    }
+
+    return user;
   }
+
 
   /// =======================
   /// GOOGLE SIGN-IN
@@ -89,4 +102,22 @@ class AuthService {
   Stream<User?> authStateChanges() {
     return _auth.authStateChanges();
   }
+
+  Future<void> createUserIfNotExists(User user) async {
+    final docRef = _firestore.collection('users').doc(user.uid);
+    final snapshot = await docRef.get();
+
+    if (!snapshot.exists) {
+      await docRef.set({
+        'uid': user.uid,
+        'name': user.displayName ?? 'User',
+        'email': user.email ?? '',
+        'provider': user.providerData.isNotEmpty
+            ? user.providerData.first.providerId
+            : 'email',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
 }

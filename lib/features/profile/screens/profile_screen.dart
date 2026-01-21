@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../../../services/firebase/history_service.dart';
 import '../widgets/profile_card.dart';
 import '../widgets/device_status_card.dart';
 import '../widgets/section_title.dart';
@@ -8,9 +10,7 @@ import '../widgets/settings_tile.dart';
 import '../widgets/switch_tile.dart';
 
 import '../../devices/screens/device_list_screen.dart';
-import '../../../services/ble/ble_connection_state.dart';
-import '../../../services/ble/ble_device_provider.dart';
-import '../../../services/ble/ble_data_provider.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -22,6 +22,17 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   bool dailyReminder = true;
   bool doNotDisturb = false;
+
+  final String? uid = FirebaseAuth.instance.currentUser?.uid;
+
+  void _openEditProfile(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const EditProfileScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,28 +59,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               const SizedBox(height: 20),
 
-              ProfileCard(
-                name: "Hari Krish",
-                email: "harikrish@gmail.com",
+              /// 👤 USER PROFILE (Firestore-driven, always tappable)
+              uid == null
+                  ? ProfileCard(
+                name: "Guest",
+                email: "",
                 onTap: () {},
+              )
+                  : StreamBuilder<DocumentSnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(uid)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  final data =
+                  snapshot.data?.data() as Map<String, dynamic>?;
+
+                  return ProfileCard(
+                    name: data?['name'] ?? "User",
+                    email: data?['email'] ?? "",
+                    onTap: () => _openEditProfile(context),
+                  );
+                },
               ),
 
               const SizedBox(height: 12),
 
-              /// 🔗 DEVICE STATUS (LIVE BLE)
-              Consumer2<BleConnectionState, BleDataProvider>(
-                builder: (context, connection, data, _) {
-                  if (!connection.isConnected) {
+              /// 🔗 DEVICE STATUS (Firestore-driven)
+              StreamBuilder<QuerySnapshot>(
+                stream: HistoryService.devicesStream(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return const DeviceStatusCard(
                       deviceName: "UrHealth Air Monitor",
                       status: "Not Connected",
                     );
                   }
 
+                  final connectedDevice = snapshot.data!.docs.firstWhere(
+                        (d) => d['isConnected'] == true,
+                    orElse: () => snapshot.data!.docs.first,
+                  );
+
+                  final isConnected =
+                      connectedDevice['isConnected'] ?? false;
+
                   return DeviceStatusCard(
-                    deviceName: "UrHealth Air Monitor",
+                    deviceName:
+                    connectedDevice['deviceName'] ?? "UrHealth Air Monitor",
                     status:
-                    "Connected  •  Battery ${data.battery.toInt()}%",
+                    isConnected ? "Connected" : "Not Connected",
                   );
                 },
               ),
@@ -80,8 +119,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               SettingsTile(
                 title: "Personal Information",
                 subtitle: "Name, age, health conditions",
-                onTap: () {},
+                onTap: () => _openEditProfile(context),
               ),
+
               SettingsTile(
                 title: "Units & Preferences",
                 subtitle: "Metric, Fahrenheit, etc.",
@@ -91,14 +131,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 24),
               const SectionTitle(text: "DEVICES"),
 
-              /// 🔗 CONNECTED DEVICES TILE (LIVE BLE)
-              Consumer2<BleConnectionState, BleDeviceProvider>(
-                builder: (context, connection, device, _) {
+              /// 🔌 CONNECTED DEVICES SUMMARY
+              StreamBuilder<QuerySnapshot>(
+                stream: HistoryService.devicesStream(),
+                builder: (context, snapshot) {
+                  String subtitle = "Not connected";
+
+                  if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                    final connectedCount = snapshot.data!.docs
+                        .where((d) => d['isConnected'] == true)
+                        .length;
+
+                    if (connectedCount > 0) {
+                      subtitle = "Connected • $connectedCount device(s)";
+                    }
+                  }
+
                   return SettingsTile(
                     title: "Connected Devices",
-                    subtitle: connection.isConnected
-                        ? "Connected • ${device.mac ?? 'UrHealth Air Monitor'}"
-                        : "Not connected",
+                    subtitle: subtitle,
                     onTap: () {
                       Navigator.push(
                         context,
@@ -120,6 +171,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 onChanged: (v) =>
                     setState(() => dailyReminder = v),
               ),
+
               SwitchTile(
                 title: "Do Not Disturb",
                 value: doNotDisturb,
@@ -127,31 +179,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     setState(() => doNotDisturb = v),
               ),
 
-              const SizedBox(height: 24),
-              const SectionTitle(text: "PRIVACY & SUPPORT"),
-
-              SettingsTile(
-                title: "Privacy & Data",
-                subtitle: "Manage Your Data",
-                onTap: () {},
-              ),
-              SettingsTile(
-                title: "Language",
-                subtitle: "English",
-                onTap: () {},
-              ),
-              SettingsTile(
-                title: "Help & Support",
-                subtitle: "",
-                onTap: () {},
-              ),
-
               const SizedBox(height: 30),
               const Center(
                 child: Text(
                   "UrHealth v1.0.0",
-                  style:
-                  TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
                 ),
               ),
             ],

@@ -28,6 +28,5 @@ class SensorReading {
     'humidity': humidity,
     'noise': noise,
     'battery': battery,
-    'timestamp': timestamp,
   };
 }

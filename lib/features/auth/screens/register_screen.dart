@@ -263,7 +263,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        Navigator.pushReplacementNamed(context, '/app');
       }
     }
 

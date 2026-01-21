@@ -15,4 +15,14 @@ class HistoryService {
         .limit(100)
         .snapshots();
   }
+  static Stream<QuerySnapshot> devicesStream() {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(uid)
+        .collection('devices')
+        .snapshots();
+  }
+
 }

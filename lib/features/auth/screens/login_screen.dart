@@ -246,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => loading = false);
 
     if (user != null && mounted) {
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, '/app');
     }
   }
 
@@ -255,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final user = await _authService.signInWithGoogle();
 
     if (user != null && mounted) {
-      Navigator.pushReplacementNamed(context, '/home');
+      Navigator.pushReplacementNamed(context, '/app');
     }
   }
 }

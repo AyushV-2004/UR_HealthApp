@@ -2,6 +2,7 @@ import 'ble_data_provider.dart';
 import '../../models/sensor_model.dart';
 import '../firebase/firebase_service.dart';
 
+
 class BleParser {
   static void parse(List<int> raw, BleDataProvider provider, {String? mac}) {
     final data = _maybeDecodeAscii(raw);
@@ -48,9 +49,13 @@ class BleParser {
     );
 
     if (mac != null) {
-      FirebaseService().saveReading(mac, reading.toJson());
-      print("✅ Saved reading for $mac");
+      FirebaseService()
+          .saveReading(mac, reading.toJson())
+          .then((_) {
+        print("✅ Saved reading for $mac");
+      });
     }
+
   }
 
   static List<int> _maybeDecodeAscii(List<int> raw) {
