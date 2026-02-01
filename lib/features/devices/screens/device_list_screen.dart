@@ -28,9 +28,13 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
 
   // 🔐 Permission + Scan
   Future<void> _requestPermissionAndScan() async {
-    final status = await Permission.locationWhenInUse.request();
+    final location = await Permission.location.request();
+    final bluetoothScan = await Permission.bluetoothScan.request();
+    final bluetoothConnect = await Permission.bluetoothConnect.request();
 
-    if (!status.isGranted) {
+    if (!location.isGranted ||
+        !bluetoothScan.isGranted ||
+        !bluetoothConnect.isGranted) {
       _showPermissionError();
       return;
     }
