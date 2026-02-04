@@ -1,62 +1,41 @@
 import 'package:flutter/material.dart';
-
 class CheckInCard extends StatelessWidget {
-  const CheckInCard({super.key});
+  final DateTime? lastUpdated;
+
+  const CheckInCard({super.key, this.lastUpdated});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 353,
+      width: double.infinity,
       height: 80,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE6FFF3), // light green
+        color: const Color(0xFFE6FFF3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: const Color(0xFF86EFAC),
-          width: 1,
-        ),
+        border: Border.all(color: const Color(0xFF86EFAC)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          /// ✅ Check Icon
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: const Color(0xFF22C55E),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: const Icon(
-              Icons.check,
-              color: Colors.white,
-              size: 20,
-            ),
+          const CircleAvatar(
+            radius: 18,
+            backgroundColor: Color(0xFF22C55E),
+            child: Icon(Icons.check, color: Colors.white),
           ),
-
           const SizedBox(width: 16),
-
-          /// 📝 Text
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Text(
+            children: [
+              const Text(
                 "Today’s Check-in complete",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF065F46),
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
-              SizedBox(height: 4),
               Text(
-                "Tap to update your symptoms",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Color(0xFF047857),
-                ),
+                lastUpdated == null
+                    ? "No recent update"
+                    : "Updated ${lastUpdated!.toLocal()}",
+                style: const TextStyle(fontSize: 12),
               ),
             ],
           ),

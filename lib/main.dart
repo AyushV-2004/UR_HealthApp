@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_app_check/firebase_app_check.dart';
 
 import 'firebase_options.dart';
 
@@ -17,11 +18,17 @@ import 'services/ble/ble_data_provider.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 Firebase initialization (MANDATORY)
+  // 🔥 Firebase initialization
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
+  // ✅ Firebase App Check (DEBUG MODE)
+  await FirebaseAppCheck.instance.activate(
+    androidProvider: AndroidProvider.debug,
+    appleProvider: AppleProvider.debug,
+  );
+  FirebaseAppCheck.instance.setTokenAutoRefreshEnabled(true);
   runApp(const UrHealthApp());
 }
 
@@ -43,8 +50,8 @@ class UrHealthApp extends StatelessWidget {
         home: const SplashScreen(),
         routes: {
           '/app': (context) => const AppShell(),
-          '/register': (context) => const RegisterScreen(), // 👈 ADD THIS
-          '/login': (context) => const LoginScreen(),       // (optional but good)
+          '/register': (context) => const RegisterScreen(),
+          '/login': (context) => const LoginScreen(),
         },
       ),
     );

@@ -220,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     border: Border.all(color: Colors.black, width: 0.3),
                   ),
                   child: Image.asset(
-                    'assets/icons/google.png',
+                    'assets/icons/navigation/google.png',
                     fit: BoxFit.contain,
                   ),
                 ),

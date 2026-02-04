@@ -1,16 +1,82 @@
+// import 'package:flutter/material.dart';
+// class ExposureCard extends StatelessWidget {
+//   final int pm25;
+//   final int pm10;
+//
+//   const ExposureCard({
+//     super.key,
+//     required this.pm25,
+//     required this.pm10,
+//   });
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     final exposureValue = ((pm25 + pm10) / 2).round();
+//
+//     return Container(
+//       padding: const EdgeInsets.all(16),
+//       decoration: BoxDecoration(
+//         color: const Color(0xFFEAF8FF),
+//         borderRadius: BorderRadius.circular(10),
+//         border: Border.all(color: const Color(0xFF66CCFF)),
+//       ),
+//       child: Column(
+//         children: [
+//           const Text("Ur Exposure", style: TextStyle(fontSize: 18)),
+//           const SizedBox(height: 12),
+//           Text(
+//             exposureValue.toString(),
+//             style: const TextStyle(
+//               fontSize: 36,
+//               fontWeight: FontWeight.bold,
+//             ),
+//           ),
+//           const Text("Unit"),
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
 import 'package:flutter/material.dart';
 
 class ExposureCard extends StatelessWidget {
-  const ExposureCard({super.key});
+  final int pm25;
+  final int pm10;
+
+  const ExposureCard({
+    super.key,
+    required this.pm25,
+    required this.pm10,
+  });
+
+  int get exposureValue => ((pm25 + pm10) / 2).round();
+
+  String get status {
+    if (exposureValue <= 50) return "Good";
+    if (exposureValue <= 100) return "Moderate";
+    return "Bad";
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 351.08,
+      width: double.infinity,
       height: 322,
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF8FF),
+        color: const Color(0xFFE5F6FF), // Figma bg
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: const Color(0xFF66CCFF),
@@ -20,7 +86,8 @@ class ExposureCard extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          /// 🔹 Header Row
+
+          /// 🔝 HEADER
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -40,18 +107,19 @@ class ExposureCard extends StatelessWidget {
                     "Monitoring over the last 24 hours",
                     style: TextStyle(
                       fontSize: 12,
+                      fontWeight: FontWeight.w400,
                       color: Color(0xFF6B7280),
                     ),
                   ),
                 ],
               ),
 
-              /// Live Badge
+              /// 🔵 LIVE BADGE
               Container(
                 padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE0F2FF),
+                  color: const Color(0xFFDFF1FF),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: const Row(
@@ -75,7 +143,7 @@ class ExposureCard extends StatelessWidget {
             ],
           ),
 
-          /// 🟢 Center Circle
+          /// 🟢 CENTER CIRCLE
           Container(
             height: 120,
             width: 120,
@@ -83,22 +151,23 @@ class ExposureCard extends StatelessWidget {
               shape: BoxShape.circle,
               color: Color(0xFF2ED47A),
             ),
-            child: const Column(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  "47",
-                  style: TextStyle(
+                  exposureValue.toString(),
+                  style: const TextStyle(
                     fontSize: 36,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 2),
-                Text(
+                const SizedBox(height: 2),
+                const Text(
                   "Unit",
                   style: TextStyle(
                     fontSize: 14,
+                    fontWeight: FontWeight.w400,
                     color: Colors.white,
                   ),
                 ),
@@ -106,22 +175,23 @@ class ExposureCard extends StatelessWidget {
             ),
           ),
 
-          /// 🔻 Footer Text
+          /// 🔻 STATUS
           Column(
-            children: const [
+            children: [
               Text(
-                "Good",
-                style: TextStyle(
+                status,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Color(0xFF1A1A1A),
                 ),
               ),
-              SizedBox(height: 4),
-              Text(
+              const SizedBox(height: 4),
+              const Text(
                 "Higher than yesterday",
                 style: TextStyle(
                   fontSize: 12,
+                  fontWeight: FontWeight.w400,
                   color: Color(0xFF6B7280),
                 ),
               ),

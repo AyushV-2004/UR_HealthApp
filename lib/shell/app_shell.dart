@@ -4,6 +4,8 @@ import 'package:ur_health/features/trends/screens/trends_overview_screen.dart';
 import 'package:ur_health/features/profile/screens/profile_screen.dart';
 import 'package:ur_health/app/widgets/ur_bottom_nav_bar.dart';
 
+import '../features/health/screens/ur_health_screen.dart';
+
 class AppShell extends StatefulWidget {
   const AppShell({super.key});
 
@@ -17,7 +19,7 @@ class _AppShellState extends State<AppShell> {
   final List<Widget> _screens = const [
     HomeDashboardScreen(),
     TrendsOverviewScreen(),
-    Placeholder(), // UrHealth (later)
+    UrHealthScreen(), // UrHealth (later)
     ProfileScreen(),
   ];
 
