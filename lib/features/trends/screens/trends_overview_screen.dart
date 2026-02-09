@@ -120,6 +120,7 @@ class TrendsOverviewScreen extends StatelessWidget {
                           deviceId: controller.deviceId!,
                         ),
                         threshold: controller.currentThreshold,
+                        maxY: controller.maxY,
                       ),
                     ),
 

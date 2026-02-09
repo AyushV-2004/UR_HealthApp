@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+
 import '../firebase/firebase_service.dart';
 import 'ble_constants.dart';
 import 'ble_connection_state.dart';
@@ -6,83 +9,105 @@ import 'ble_connection_state.dart';
 class BleService {
   final FlutterReactiveBle _ble = FlutterReactiveBle();
 
-  QualifiedCharacteristic? rxCharacteristic;
-  QualifiedCharacteristic? txCharacteristic;
+  QualifiedCharacteristic? rx;
+  QualifiedCharacteristic? tx;
 
-  /// 🔍 Scan for BLE devices
+  /// 🔔 Notification subscription (for sync)
+  StreamSubscription<List<int>>? _notifySub;
+
+  /// 🔍 SCAN DEVICES
   Stream<DiscoveredDevice> scanDevices() {
     return _ble.scanForDevices(
-      withServices: [],
+      withServices: const [],
       scanMode: ScanMode.lowLatency,
     );
   }
 
-  /// 🔗 Connect to device
-  void connect(
+  /// 🔗 CONNECT ONLY (NO DATA FLOW HERE)
+  Stream<DeviceConnectionState> connect(
       String deviceId,
       BleConnectionState connectionState,
       ) {
-    rxCharacteristic = QualifiedCharacteristic(
+    rx = QualifiedCharacteristic(
       deviceId: deviceId,
       serviceId: BleConstants.uartService,
       characteristicId: BleConstants.rxChar,
     );
 
-    txCharacteristic = QualifiedCharacteristic(
+    tx = QualifiedCharacteristic(
       deviceId: deviceId,
       serviceId: BleConstants.uartService,
       characteristicId: BleConstants.txChar,
     );
 
-    _ble.connectToDevice(
+    return _ble
+        .connectToDevice(
       id: deviceId,
-      connectionTimeout: const Duration(seconds: 10),
-    ).listen((update) async {
+      connectionTimeout: const Duration(seconds: 20),
+    )
+        .map((update) {
       if (update.connectionState == DeviceConnectionState.connected) {
-        print("🟢 BLE connected");
         connectionState.setConnected(true);
 
-        // 🔥 FIRESTORE CONNECT UPDATE
-        await FirebaseService().updateDeviceStatus(
+        FirebaseService().updateDeviceStatus(
           mac: deviceId,
           isConnected: true,
-          location: "Bedroom", // TEMP (UI later)
-        );
-      }
-
-      if (update.connectionState ==
-          DeviceConnectionState.disconnected) {
-        print("🔴 BLE disconnected");
-        connectionState.setConnected(false);
-
-        // 🔥 FIRESTORE DISCONNECT UPDATE
-        await FirebaseService().updateDeviceStatus(
-          mac: deviceId,
-          isConnected: false,
           location: "Bedroom",
         );
       }
+
+      if (update.connectionState == DeviceConnectionState.disconnected) {
+        connectionState.setConnected(false);
+      }
+
+      return update.connectionState;
     });
   }
 
-
-  /// 📡 Subscribe to TX notifications
-  Stream<List<int>> subscribeToData() {
-    return _ble.subscribeToCharacteristic(txCharacteristic!);
+  /// 📤 WRITE COMMAND (generic)
+  Future<void> write(List<int> data) async {
+    if (rx == null) return;
+    await _ble.writeCharacteristicWithoutResponse(rx!, value: data);
   }
 
-  /// 📤 Write to RX
-  Future<void> writeCommand(List<int> data) async {
-    if (rxCharacteristic == null) {
-      print("❗ RX characteristic not ready");
-      return;
+  /// 🔄 SYNC ALL DATA (FLASH → APP)
+  Future<void> syncAllData({
+    required void Function(List<int>) onPacket,
+  }) async {
+    if (rx == null || tx == null) {
+      throw Exception("BLE characteristics not ready");
     }
 
-    print("📤 Writing to RX: $data");
-
-    await _ble.writeCharacteristicWithResponse(
-      rxCharacteristic!,
-      value: data,
+    // 🔔 Subscribe to notifications
+    _notifySub?.cancel();
+    _notifySub = _ble
+        .subscribeToCharacteristic(tx!)
+        .listen(
+      onPacket,
+      onError: (e) {
+        print("❌ BLE notify error: $e");
+      },
     );
+
+    // 📤 Fire GET ALL DATA command
+    await _ble.writeCharacteristicWithoutResponse(
+      rx!,
+      value: BleConstants.getAllDataCommand,
+    );
+
+    print("📡 getAllDataCommand sent");
+  }
+
+  /// 🛑 STOP SYNC
+  void stopSync() {
+    _notifySub?.cancel();
+    _notifySub = null;
+    print("🛑 BLE sync stopped");
+  }
+
+  /// 📥 READ ONCE (OPTIONAL / DEBUG)
+  Future<List<int>> readOnce() async {
+    if (tx == null) throw Exception("TX not ready");
+    return await _ble.readCharacteristic(tx!);
   }
 }
