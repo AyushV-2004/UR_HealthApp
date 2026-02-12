@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class BleDataProvider extends ChangeNotifier {
+  /// 🔵 LIVE DATA (used by UI)
   double temperature = 0;
   double humidity = 0;
   double pm25 = 0;
@@ -10,7 +11,13 @@ class BleDataProvider extends ChangeNotifier {
   double noise = 0;
   double battery = 0;
 
-  void update({
+  /// 🧺 SYNC BUFFER (used only during Sync Now)
+  final List<Map<String, dynamic>> _buffer = [];
+
+  List<Map<String, dynamic>> get buffer => List.unmodifiable(_buffer);
+
+  /// 🔄 Update LIVE values (used only for last packet)
+  void updateLive({
     double? temperature,
     double? humidity,
     double? pm25,
@@ -30,5 +37,15 @@ class BleDataProvider extends ChangeNotifier {
     if (battery != null) this.battery = battery;
 
     notifyListeners();
+  }
+
+  /// ➕ Add reading to SYNC buffer
+  void addReading(Map<String, dynamic> reading) {
+    _buffer.add(reading);
+  }
+
+  /// 🧹 Clear buffer after successful sync
+  void clearBuffer() {
+    _buffer.clear();
   }
 }

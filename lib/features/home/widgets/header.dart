@@ -4,17 +4,25 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 /// 🏠 Home Header
 class HomeHeader extends StatelessWidget {
-  const HomeHeader({super.key});
+  final String deviceName;
+  final bool isConnected;
+
+  const HomeHeader({
+    super.key,
+    required this.deviceName,
+    required this.isConnected,
+  });
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
     return SizedBox(
-      width: 335,
       height: 66,
+        child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
       child: user == null
-          ? _buildFallback()
+          ? _buildHeader("User")
           : StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection('users')
@@ -24,91 +32,48 @@ class HomeHeader extends StatelessWidget {
           String userName = "User";
 
           if (snapshot.hasData && snapshot.data!.exists) {
-            final data = snapshot.data!.data() as Map<String, dynamic>;
+            final data =
+            snapshot.data!.data() as Map<String, dynamic>;
             userName = data['name'] ?? "User";
           }
 
           return _buildHeader(userName);
         },
       ),
+        ),
     );
   }
 
-  /// 🔹 Header UI
   Widget _buildHeader(String userName) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        /// 👋 Left Section (Greeting + Location)
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Row(
-              children: [
-                Text(
-                  "Hi, $userName",
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A1A),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                const Icon(
-                  Icons.keyboard_arrow_down,
-                  size: 20,
-                  color: Color(0xFF1A1A1A),
-                ),
-              ],
+            Text(
+              "Hi, $userName",
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 4),
-            Row(
-              children: const [
-                Icon(
-                  Icons.location_on_outlined,
-                  size: 14,
-                  color: Color(0xFF6B7280),
-                ),
-                SizedBox(width: 4),
-                Text(
-                  "Delhi, India.",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF6B7280),
-                  ),
-                ),
-                SizedBox(width: 8),
-                Text(
-                  "Last synced 1 min ago",
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF9CA3AF),
-                  ),
-                ),
-              ],
+            Text(
+              "$deviceName • ${isConnected ? "Connected" : "Disconnected"}",
+              style: const TextStyle(
+                fontSize: 12,
+                color: Colors.grey,
+              ),
             ),
           ],
         ),
-
-        /// 🔔 Right Section (Notification + Settings)
-        Row(
-          children: const [
-            _NotificationIcon(hasUnread: true),
-            SizedBox(width: 12),
-            _SettingsIcon(),
-          ],
-        ),
+        const _NotificationIcon(hasUnread: true),
       ],
     );
   }
-
-  /// Fallback UI if user is null
-  Widget _buildFallback() {
-    return _buildHeader("User");
-  }
 }
+
 
 /// 🔔 Notification Icon
 class _NotificationIcon extends StatelessWidget {
@@ -119,59 +84,36 @@ class _NotificationIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 24,
-      height: 24,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
+        width: 24,
+        height: 24,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
           IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: const Icon(
-              Icons.notifications_none,
-              size: 22,
-              color: Color(0xFF282828),
-            ),
-            onPressed: () {},
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: const Icon(
+            Icons.notifications_none,
+            size: 22,
+            color: Color(0xFF282828),
           ),
-          if (hasUnread)
-            Positioned(
-              top: 2,
-              right: 2,
-              child: Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEF4444),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// ⚙️ Settings Icon
-class _SettingsIcon extends StatelessWidget {
-  const _SettingsIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 24,
-      height: 24,
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-        icon: const Icon(
-          Icons.settings_outlined,
-          size: 20,
-          color: Color(0xFF282828),
+          onPressed: () {},
         ),
-        onPressed: () {},
-      ),
+        if (hasUnread)
+    Positioned(
+        top: 2,
+        right: 2,
+        child: Container(
+        width: 6,
+        height: 6,
+          decoration: const BoxDecoration(
+            color: Color(0xFFEF4444),
+            shape: BoxShape.circle,
+          ),
+        ),
+    ),
+          ],
+        ),
     );
   }
 }

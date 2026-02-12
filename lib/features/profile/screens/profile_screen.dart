@@ -86,32 +86,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 12),
 
               /// 🔗 DEVICE STATUS (Firestore-driven)
-              StreamBuilder<QuerySnapshot>(
-                stream: HistoryService.devicesStream(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const DeviceStatusCard(
-                      deviceName: "UrHealth Air Monitor",
-                      status: "Not Connected",
-                    );
-                  }
-
-                  final connectedDevice = snapshot.data!.docs.firstWhere(
-                        (d) => d['isConnected'] == true,
-                    orElse: () => snapshot.data!.docs.first,
+            StreamBuilder<QuerySnapshot>(
+              stream: HistoryService.devicesStream(),
+              builder: (context, snapshot) {
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const DeviceStatusCard(
+                    deviceName: "UrHealth Air Monitor",
+                    status: "Not Connected",
                   );
+                }
 
-                  final isConnected =
-                      connectedDevice['isConnected'] ?? false;
+                final connectedDevices = snapshot.data!.docs
+                    .where((d) => d['isConnected'] == true)
+                    .toList();
 
-                  return DeviceStatusCard(
-                    deviceName:
-                    connectedDevice['deviceName'] ?? "UrHealth Air Monitor",
-                    status:
-                    isConnected ? "Connected" : "Not Connected",
+                if (connectedDevices.isEmpty) {
+                  return const DeviceStatusCard(
+                    deviceName: "UrHealth Air Monitor",
+                    status: "Not Connected",
                   );
-                },
-              ),
+                }
+
+                final device = connectedDevices.first;
+                final data = device.data() as Map<String, dynamic>;
+
+                return DeviceStatusCard(
+                  deviceName: data['deviceName'] ?? 'UrHealth Air Monitor',
+                  status: "Connected",
+                );
+              },
+            ),
 
               const SizedBox(height: 24),
               const SectionTitle(text: "PERSONAL"),
@@ -132,35 +136,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SectionTitle(text: "DEVICES"),
 
               /// 🔌 CONNECTED DEVICES SUMMARY
-              StreamBuilder<QuerySnapshot>(
-                stream: HistoryService.devicesStream(),
-                builder: (context, snapshot) {
-                  String subtitle = "Not connected";
+          StreamBuilder<QuerySnapshot>(
+            stream: HistoryService.devicesStream(),
+            builder: (context, snapshot) {
+              String subtitle = "Not connected";
 
-                  if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                    final connectedCount = snapshot.data!.docs
-                        .where((d) => d['isConnected'] == true)
-                        .length;
+              if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                final connectedDevices = snapshot.data!.docs
+                    .where((d) => d['isConnected'] == true)
+                    .toList();
 
-                    if (connectedCount > 0) {
-                      subtitle = "Connected • $connectedCount device(s)";
-                    }
-                  }
+                if (connectedDevices.isNotEmpty) {
+                  subtitle = "Connected • ${connectedDevices.length} device(s)";
+                }
+              }
 
-                  return SettingsTile(
-                    title: "Connected Devices",
-                    subtitle: subtitle,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const DeviceListScreen(),
-                        ),
-                      );
-                    },
+              return SettingsTile(
+                title: "Connected Devices",
+                subtitle: subtitle,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const DeviceListScreen(),
+                    ),
                   );
                 },
-              ),
+              );
+            },
+          ),
 
               const SizedBox(height: 24),
               const SectionTitle(text: "NOTIFICATIONS"),
