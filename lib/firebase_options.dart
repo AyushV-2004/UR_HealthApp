@@ -17,29 +17,17 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -59,4 +47,47 @@ class DefaultFirebaseOptions {
     projectId: 'ur-health-cd3fb',
     storageBucket: 'ur-health-cd3fb.firebasestorage.app',
   );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyASKu1QLX04a-wEsnz_MhRl2ZWmYiChgKo',
+    appId: '1:448168991519:web:145fa8b10ef6e17ab76e2a',
+    messagingSenderId: '448168991519',
+    projectId: 'ur-health-cd3fb',
+    authDomain: 'ur-health-cd3fb.firebaseapp.com',
+    storageBucket: 'ur-health-cd3fb.firebasestorage.app',
+    measurementId: 'G-K7K4K31RCK',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyAIqOVLE-XkSWPclgu3JswG_OsM51P3leI',
+    appId: '1:448168991519:ios:f3c7e894fb09a76cb76e2a',
+    messagingSenderId: '448168991519',
+    projectId: 'ur-health-cd3fb',
+    storageBucket: 'ur-health-cd3fb.firebasestorage.app',
+    androidClientId: '448168991519-k4c6ler3rcglrmroq6fmv1283rc7l86k.apps.googleusercontent.com',
+    iosClientId: '448168991519-c5she87dcss9kc1ffttdaghcibeav9bs.apps.googleusercontent.com',
+    iosBundleId: 'com.example.urHealth',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyAIqOVLE-XkSWPclgu3JswG_OsM51P3leI',
+    appId: '1:448168991519:ios:f3c7e894fb09a76cb76e2a',
+    messagingSenderId: '448168991519',
+    projectId: 'ur-health-cd3fb',
+    storageBucket: 'ur-health-cd3fb.firebasestorage.app',
+    androidClientId: '448168991519-k4c6ler3rcglrmroq6fmv1283rc7l86k.apps.googleusercontent.com',
+    iosClientId: '448168991519-c5she87dcss9kc1ffttdaghcibeav9bs.apps.googleusercontent.com',
+    iosBundleId: 'com.example.urHealth',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyASKu1QLX04a-wEsnz_MhRl2ZWmYiChgKo',
+    appId: '1:448168991519:web:36a8e509db178c64b76e2a',
+    messagingSenderId: '448168991519',
+    projectId: 'ur-health-cd3fb',
+    authDomain: 'ur-health-cd3fb.firebaseapp.com',
+    storageBucket: 'ur-health-cd3fb.firebasestorage.app',
+    measurementId: 'G-YCEBLH70V8',
+  );
+
 }

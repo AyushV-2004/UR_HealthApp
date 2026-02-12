@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lottie/lottie.dart';
 
 import '../../shell/app_shell.dart';
 import '../auth/screens/auth_gate.dart';
@@ -33,10 +32,10 @@ class _SplashScreenState extends State<SplashScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Center(
-        child: Lottie.asset(
-          'assets/lottie/urhealth_logo.json',
-          width: 180,
-          repeat: true,
+        child: SizedBox(
+        width: 180,
+        height: 180,
+        // optional: add a static logo later
         ),
       ),
     );
