@@ -122,42 +122,53 @@ class SyncService {
     required this.syncProgress,
   });
 
-  /// 🔄 MAIN SYNC METHOD
   Future<void> syncNow({
     required String mac,
   }) async {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) throw Exception("User not logged in");
+      if (uid == null) {
+        throw Exception("User not logged in");
+      }
 
-      syncProgress.setStage(SyncStage.connecting);
-
-      dataProvider.clearBuffer();
+      if (!bleService.isReady) {
+        throw Exception("Device not connected");
+      }
 
       syncProgress.setStage(SyncStage.fetching);
 
-      // 1️⃣ Enable notifications FIRST
+      // Clear previous buffer
+      dataProvider.clearBuffer();
+
+      print("🔔 Enabling notifications...");
+
       await bleService.startNotificationListener(
         onPacket: (raw) {
+          print("📦 Packet received inside SyncService");
           BleParser.parse(raw, dataProvider);
         },
       );
 
-      // 2️⃣ Give CCCD time
+      // Allow CCCD setup
       await Future.delayed(const Duration(seconds: 2));
 
-      // 3️⃣ Send GET ALL DATA
+      print("📡 Sending GET ALL DATA command...");
       await bleService.sendGetAllCommand();
 
-      // 4️⃣ Wait for flash dump
+      // Wait for flash streaming
       await Future.delayed(const Duration(seconds: 6));
 
       final readings = dataProvider.buffer;
+
+      print("📊 Total parsed readings: ${readings.length}");
+
       if (readings.isEmpty) {
         throw Exception("No data received from device");
       }
 
       syncProgress.setStage(SyncStage.uploading);
+
+      print("☁ Uploading to Firestore...");
 
       await firebaseService.batchSaveReadings(
         uid: uid,
@@ -167,13 +178,17 @@ class SyncService {
 
       await firebaseService.updateLastSync(uid, mac);
 
+      print("✅ Upload completed");
+
       bleService.stopSync();
       dataProvider.clearBuffer();
 
       syncProgress.setStage(SyncStage.success);
+
       await Future.delayed(const Duration(seconds: 2));
       syncProgress.reset();
     } catch (e) {
+      print("❌ SYNC ERROR: $e");
       bleService.stopSync();
       syncProgress.setError(e.toString());
     }

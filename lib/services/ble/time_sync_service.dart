@@ -14,7 +14,8 @@ class TimeSyncService {
       deviceId: deviceId,
     );
 
-    final now = DateTime.now().toUtc();
+    final nowUtc = DateTime.now().toUtc();
+    final now = nowUtc.add(const Duration(hours: 5, minutes: 30));
 
     final day = now.day;
     final month = now.month;

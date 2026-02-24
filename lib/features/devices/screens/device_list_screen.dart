@@ -5,11 +5,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../../../services/ble/ble_service.dart';
-import '../../../services/ble/ble_constants.dart';
 import '../../../services/ble/ble_connection_state.dart';
 import '../../../services/ble/ble_device_provider.dart';
-import '../../../services/ble/ble_data_provider.dart';
-
 
 class DeviceListScreen extends StatefulWidget {
   const DeviceListScreen({super.key});
@@ -19,11 +16,8 @@ class DeviceListScreen extends StatefulWidget {
 }
 
 class _DeviceListScreenState extends State<DeviceListScreen> {
-  final BleService _bleService = BleService();
   final List<DiscoveredDevice> _devices = [];
-
   StreamSubscription<DiscoveredDevice>? _scanSub;
-  StreamSubscription<DeviceConnectionState>? _connectSub;
 
   @override
   void initState() {
@@ -36,7 +30,9 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
     await Permission.bluetoothScan.request();
     await Permission.bluetoothConnect.request();
 
-    _scanSub = _bleService.scanDevices().listen((device) {
+    final bleService = context.read<BleService>();
+
+    _scanSub = bleService.scanDevices().listen((device) {
       if (device.name.isEmpty) return;
       if (_devices.any((d) => d.id == device.id)) return;
 
@@ -52,12 +48,15 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
   @override
   void dispose() {
     _scanSub?.cancel();
-    _connectSub?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final bleService = context.read<BleService>();
+    final connectionState = context.read<BleConnectionState>();
+    final deviceProvider = context.read<BleDeviceProvider>();
+
     return Scaffold(
       appBar: AppBar(title: const Text("Available Devices")),
       body: ListView.builder(
@@ -68,55 +67,23 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
           return ListTile(
             title: Text(device.name),
             subtitle: Text(device.id),
-            onTap: () {
+            onTap: () async {
               _stopScan();
+              final bleService = context.read<BleService>();
+              final connectionState = context.read<BleConnectionState>();
+              final deviceProvider = context.read<BleDeviceProvider>();
+    deviceProvider.setDevice(device.id);
 
-              final connectionState =
-              context.read<BleConnectionState>();
-              final deviceProvider =
-              context.read<BleDeviceProvider>();
-              final dataProvider =
-              context.read<BleDataProvider>();
+    await bleService.connect(device.id, connectionState);
 
-              // ✅ GLOBAL BLE CONTEXT (IMPORTANT)
-              BleConstants.connectedDeviceId = device.id;
+    while (!connectionState.isConnected) {
+    await Future.delayed(const Duration(milliseconds: 200));
+    }
 
-              // ✅ UI + FIRESTORE CONTEXT
-              deviceProvider.setMac(device.id);
-
-              _connectSub = _bleService
-                  .connect(device.id, connectionState)
-                  .listen((state) {
-                if (state == DeviceConnectionState.connected) {
-                  // ✅ START OLD-SAFE POLLING
-                  onTap: () {
-                    _stopScan();
-
-                    final connectionState =
-                    context.read<BleConnectionState>();
-                    final deviceProvider =
-                    context.read<BleDeviceProvider>();
-
-                    // ✅ GLOBAL BLE CONTEXT
-                    BleConstants.connectedDeviceId = device.id;
-
-                    // ✅ STORE MAC FOR APP
-                    deviceProvider.setMac(device.id);
-
-                    _connectSub = _bleService
-                        .connect(device.id, connectionState)
-                        .listen((state) {
-                      if (state == DeviceConnectionState.connected) {
-                        if (!mounted) return;
-                        Navigator.pop(context); // back to AppShell
-                      }
-                    });
-                  };
+                // 4️⃣ Navigate only after connected
                 if (!mounted) return;
-                  Navigator.pop(context); // back to AppShell
-          ;      }
-              });
-            },
+                Navigator.pop(context);
+              },
           );
         },
       ),
