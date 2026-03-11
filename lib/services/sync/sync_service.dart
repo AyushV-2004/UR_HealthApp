@@ -1,13 +1,11 @@
 //
 // import 'dart:async';
-//
 // import 'package:firebase_auth/firebase_auth.dart';
 //
 // import '../ble/ble_service.dart';
 // import '../ble/ble_parser.dart';
 // import '../ble/ble_data_provider.dart';
 // import '../firebase/firebase_service.dart';
-//
 // import 'sync_progress.dart';
 //
 // class SyncService {
@@ -23,7 +21,6 @@
 //     required this.syncProgress,
 //   });
 //
-//   /// 🔄 MAIN SYNC METHOD (ROBUST & ORDERED)
 //   Future<void> syncNow({
 //     required String mac,
 //   }) async {
@@ -33,43 +30,44 @@
 //         throw Exception("User not logged in");
 //       }
 //
-//       // 🟡 1. CONNECTING (UI)
-//       syncProgress.setStage(SyncStage.connecting);
-//
-//       // ✅ ENSURE BLE IS READY
 //       if (!bleService.isReady) {
-//         throw Exception("BLE not connected. Please connect device first.");
+//         throw Exception("Device not connected");
 //       }
 //
-//       // 🧹 Clear any leftover data
+//       syncProgress.setStage(SyncStage.fetching);
+//
+//       // Clear previous buffer
 //       dataProvider.clearBuffer();
 //
-//       // 🔵 2. START LISTENING FIRST
-//       syncProgress.setStage(SyncStage.fetching);
+//       print("🔔 Enabling notifications...");
 //
 //       await bleService.startNotificationListener(
 //         onPacket: (raw) {
+//           print("📦 Packet received inside SyncService");
 //           BleParser.parse(raw, dataProvider);
 //         },
 //       );
 //
-//       // ⏳ IMPORTANT: give CCCD time to enable
-//       await Future.delayed(const Duration(milliseconds: 500));
+//       // Allow CCCD setup
+//       await Future.delayed(const Duration(seconds: 2));
 //
-//       // 📤 SEND GET ALL DATA COMMAND
+//       print("📡 Sending GET ALL DATA command...");
 //       await bleService.sendGetAllCommand();
 //
-//       // ⏳ WAIT FOR DEVICE TO STREAM FLASH DATA
+//       // Wait for flash streaming
 //       await Future.delayed(const Duration(seconds: 6));
 //
 //       final readings = dataProvider.buffer;
+//
+//       print("📊 Total parsed readings: ${readings.length}");
 //
 //       if (readings.isEmpty) {
 //         throw Exception("No data received from device");
 //       }
 //
-//       // 🟣 3. UPLOAD TO FIREBASE
 //       syncProgress.setStage(SyncStage.uploading);
+//
+//       print("☁ Uploading to Firestore...");
 //
 //       await firebaseService.batchSaveReadings(
 //         uid: uid,
@@ -79,23 +77,24 @@
 //
 //       await firebaseService.updateLastSync(uid, mac);
 //
-//       // 🛑 STOP BLE NOTIFICATIONS
-//       bleService.stopSync();
+//       print("✅ Upload completed");
 //
-//       // 🧹 Cleanup
+//       bleService.stopSync();
 //       dataProvider.clearBuffer();
 //
-//       // ✅ SUCCESS
 //       syncProgress.setStage(SyncStage.success);
 //
 //       await Future.delayed(const Duration(seconds: 2));
 //       syncProgress.reset();
 //     } catch (e) {
+//       print("❌ SYNC ERROR: $e");
 //       bleService.stopSync();
 //       syncProgress.setError(e.toString());
 //     }
 //   }
 // }
+
+
 
 
 
@@ -122,6 +121,9 @@ class SyncService {
     required this.syncProgress,
   });
 
+  // ⏳ Timer to detect end of BLE stream
+  Timer? _inactivityTimer;
+
   Future<void> syncNow({
     required String mac,
   }) async {
@@ -137,7 +139,7 @@ class SyncService {
 
       syncProgress.setStage(SyncStage.fetching);
 
-      // Clear previous buffer
+      // 🧹 Clear previous buffer
       dataProvider.clearBuffer();
 
       print("🔔 Enabling notifications...");
@@ -145,7 +147,16 @@ class SyncService {
       await bleService.startNotificationListener(
         onPacket: (raw) {
           print("📦 Packet received inside SyncService");
+
+          // 🔍 Parse packet → pushes data into buffer
           BleParser.parse(raw, dataProvider);
+
+          // ♻ Reset inactivity timer on every packet
+          _inactivityTimer?.cancel();
+          _inactivityTimer = Timer(const Duration(seconds: 2), () async {
+            print("⏳ No packets for 2s → Processing data");
+            await _processAndUpload(uid: uid, mac: mac);
+          });
         },
       );
 
@@ -154,16 +165,27 @@ class SyncService {
 
       print("📡 Sending GET ALL DATA command...");
       await bleService.sendGetAllCommand();
+    } catch (e) {
+      print("❌ SYNC ERROR: $e");
+      _inactivityTimer?.cancel();
+      bleService.stopSync();
+      syncProgress.setError(e.toString());
+    }
+  }
 
-      // Wait for flash streaming
-      await Future.delayed(const Duration(seconds: 6));
-
+  // ☁ Process parsed data & upload safely
+  Future<void> _processAndUpload({
+    required String uid,
+    required String mac,
+  }) async {
+    try {
       final readings = dataProvider.buffer;
 
-      print("📊 Total parsed readings: ${readings.length}");
+      print("📊 Final parsed readings: ${readings.length}");
 
       if (readings.isEmpty) {
-        throw Exception("No data received from device");
+        print("⚠ No readings to upload");
+        return;
       }
 
       syncProgress.setStage(SyncStage.uploading);
@@ -188,9 +210,12 @@ class SyncService {
       await Future.delayed(const Duration(seconds: 2));
       syncProgress.reset();
     } catch (e) {
-      print("❌ SYNC ERROR: $e");
-      bleService.stopSync();
+      print("❌ Upload error: $e");
       syncProgress.setError(e.toString());
     }
+  }
+
+  void dispose() {
+    _inactivityTimer?.cancel();
   }
 }

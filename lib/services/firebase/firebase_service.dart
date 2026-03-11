@@ -1,9 +1,13 @@
+//
+//
 // import 'package:cloud_firestore/cloud_firestore.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
 //
 // class FirebaseService {
-//   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-//   final FirebaseAuth _auth = FirebaseAuth.instance;
+//   final FirebaseFirestore _firestore =
+//       FirebaseFirestore.instance;
+//   final FirebaseAuth _auth =
+//       FirebaseAuth.instance;
 //
 //   /// 🔗 Update device connection & metadata
 //   Future<void> updateDeviceStatus({
@@ -29,8 +33,7 @@
 //     }, SetOptions(merge: true));
 //   }
 //
-//   /// ⚠️ LEGACY METHOD (streaming-based, kept for safety)
-//   /// Used by old flow, NOT used by SyncService
+//   /// 🔄 LEGACY METHOD (single reading stream flow)
 //   Future<void> saveReading(
 //       String mac,
 //       Map<String, dynamic> data,
@@ -44,23 +47,33 @@
 //         .collection('devices')
 //         .doc(mac);
 //
-//     // ✅ Update latest snapshot (Home screen uses this)
+//     final DateTime timestamp = data['timestamp'];
+//
+//     final docId =
+//     timestamp.toUtc().toIso8601String();
+//
+//     // ✅ Update latest snapshot (for HomeDashboard)
 //     await deviceRef.set({
 //       'readings': {
 //         ...data,
-//         'timestamp': FieldValue.serverTimestamp(),
+//         'timestamp':
+//         Timestamp.fromDate(timestamp.toUtc()),
 //       },
 //       'lastSeen': FieldValue.serverTimestamp(),
 //     }, SetOptions(merge: true));
 //
-//     // ✅ Save single historical reading
-//     await deviceRef.collection('readings').add({
+//     // ✅ Save historical reading with timestamp as ID
+//     await deviceRef
+//         .collection('readings')
+//         .doc(docId)
+//         .set({
 //       ...data,
-//       'timestamp': FieldValue.serverTimestamp(),
+//       'timestamp':
+//       Timestamp.fromDate(timestamp.toUtc()),
 //     });
 //   }
 //
-//   /// 🔄 NEW: Batch save readings (Sync Now flow)
+//   /// 🔄 Batch save readings (Sync Now flow)
 //   Future<void> batchSaveReadings({
 //     required String uid,
 //     required String mac,
@@ -75,18 +88,30 @@
 //         .doc(mac);
 //
 //     for (final reading in readings) {
-//       final docRef = deviceRef.collection('readings').doc();
+//       final DateTime timestamp =
+//       reading['timestamp'];
+//
+//       final docId =
+//       timestamp.toUtc().toIso8601String();
+//
+//       final docRef = deviceRef
+//           .collection('readings')
+//           .doc(docId);
 //
 //       batch.set(docRef, {
 //         ...reading,
-//         'timestamp': FieldValue.serverTimestamp(),
+//         'timestamp':
+//         Timestamp.fromDate(timestamp.toUtc()),
 //       });
 //     }
 //
 //     await batch.commit();
+//
+//     print(
+//         "✅ Batch saved ${readings.length} readings");
 //   }
 //
-//   /// 🕒 NEW: Update sync metadata
+//   /// 🕒 Update sync metadata
 //   Future<void> updateLastSync(
 //       String uid,
 //       String mac,
@@ -97,11 +122,19 @@
 //         .collection('devices')
 //         .doc(mac)
 //         .set({
-//       'lastSyncAt': FieldValue.serverTimestamp(),
-//       'lastSeen': FieldValue.serverTimestamp(),
+//       'lastSyncAt':
+//       FieldValue.serverTimestamp(),
+//       'lastSeen':
+//       FieldValue.serverTimestamp(),
 //     }, SetOptions(merge: true));
 //   }
 // }
+
+
+
+
+
+
 
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -153,8 +186,7 @@ class FirebaseService {
 
     final DateTime timestamp = data['timestamp'];
 
-    final docId =
-    timestamp.toUtc().toIso8601String();
+    final docId = timestamp.toUtc().toIso8601String();
 
     // ✅ Update latest snapshot (for HomeDashboard)
     await deviceRef.set({
@@ -166,7 +198,7 @@ class FirebaseService {
       'lastSeen': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
 
-    // ✅ Save historical reading with timestamp as ID
+    // ⚠ Historical save (kept legacy behavior)
     await deviceRef
         .collection('readings')
         .doc(docId)
@@ -177,7 +209,7 @@ class FirebaseService {
     });
   }
 
-  /// 🔄 Batch save readings (Sync Now flow)
+  /// 🔥 Batch save readings (Sync Now flow) — FIXED
   Future<void> batchSaveReadings({
     required String uid,
     required String mac,
@@ -191,16 +223,21 @@ class FirebaseService {
         .collection('devices')
         .doc(mac);
 
-    for (final reading in readings) {
-      final DateTime timestamp =
-      reading['timestamp'];
+    print("☁ Preparing batch write...");
 
+    for (int i = 0; i < readings.length; i++) {
+      final reading = readings[i];
+      final DateTime timestamp = reading['timestamp'];
+
+      // ✅ Unique ID prevents overwrite
       final docId =
-      timestamp.toUtc().toIso8601String();
+          '${timestamp.toUtc().microsecondsSinceEpoch}_$i';
 
       final docRef = deviceRef
           .collection('readings')
           .doc(docId);
+
+      print("📝 Writing docId: $docId");
 
       batch.set(docRef, {
         ...reading,
@@ -212,7 +249,7 @@ class FirebaseService {
     await batch.commit();
 
     print(
-        "✅ Batch saved ${readings.length} readings");
+        "🔥 Batch committed: ${readings.length} docs");
   }
 
   /// 🕒 Update sync metadata
@@ -233,3 +270,4 @@ class FirebaseService {
     }, SetOptions(merge: true));
   }
 }
+
